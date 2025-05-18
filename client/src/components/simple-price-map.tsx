@@ -54,25 +54,71 @@ function MapLegend({ minPrice, maxPrice }: { minPrice: number; maxPrice: number 
   return null;
 }
 
-// Component to fit map bounds to store markers
+// Component to fit map bounds to store markers with improved handling for zoom changes
 function FitBounds({ stores }: { stores: StoreWithPrices[] }) {
   const map = useMap();
+  
+  // Generate a key that changes when store coordinates or count changes
+  const storesKey = stores
+    .map(store => `${store.id}-${store.latitude}-${store.longitude}`)
+    .join('|');
   
   useEffect(() => {
     if (stores.length === 0) return;
     
     try {
+      // Force map to recalculate size
+      map.invalidateSize(true);
+      
+      // Create points from store coordinates
       const points = stores.map(store => [
         Number(store.latitude), 
         Number(store.longitude)
       ] as [number, number]);
       
+      // Create bounds with all store points
       const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [50, 50] });
+      
+      // Add significant padding to ensure all markers are visible
+      const padding = [70, 70];
+      
+      // Use a sequence of operations to ensure map properly updates
+      // First reset the view to make sure we're starting fresh
+      const center = bounds.getCenter();
+      map.setView(center, 12, { animate: false });
+      
+      // Then after a short delay, fit to bounds
+      setTimeout(() => {
+        console.log("Fitting map to bounds for zipcode:", 
+          stores[0].zipCode, 
+          "with", 
+          stores.length, 
+          "stores");
+        
+        map.fitBounds(bounds, { 
+          padding,
+          animate: true, 
+          maxZoom: 14  // Prevent zooming in too far
+        });
+        
+        // Double check after another short delay
+        setTimeout(() => {
+          // If zoom level is too high, reduce it
+          if (map.getZoom() > 14) {
+            map.setZoom(14);
+          }
+          
+          // Verify bounds are visible
+          if (!map.getBounds().contains(bounds)) {
+            console.log("Re-fitting bounds as they were not properly applied");
+            map.fitBounds(bounds, { padding, animate: false });
+          }
+        }, 300);
+      }, 200);
     } catch (error) {
       console.error("Failed to fit bounds:", error);
     }
-  }, [map, stores]);
+  }, [map, storesKey]); // Use storesKey to ensure effect runs when store data changes
   
   return null;
 }
