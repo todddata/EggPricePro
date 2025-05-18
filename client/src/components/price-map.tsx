@@ -6,6 +6,27 @@ import { getPriceColor } from "@/lib/price-utils";
 import { getGoogleMapsDirectionsUrl } from "@/lib/map-utils";
 import type { StoreWithPrices } from "@shared/schema";
 
+// Add leaflet CSS if needed - this ensures the map displays correctly
+// These should be in your index.html or main CSS, but adding here to be sure
+const LEAFLET_CSS = `
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+.map-price-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  width: 100%;
+  height: 100%;
+}
+`;
+
 interface PriceMapProps {
   stores: StoreWithPrices[];
   minPrice: number;
@@ -14,32 +35,22 @@ interface PriceMapProps {
 }
 
 export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: PriceMapProps) {
-  // Track when the map has been rendered
-  const [mapRendered, setMapRendered] = useState(false);
-  
-  // Get zip code for display
+  // Create a completely new map instance for each zip code
   const zipCode = stores.length > 0 ? stores[0].zipCode : "94110";
   
-  // Get center coordinates - calculate average lat/lng from all stores
-  let centerLat = 39.8283; // Default center of US
-  let centerLng = -98.5795;
+  // Static map initialization reference
+  const mapRef = useRef<L.Map | null>(null);
   
-  if (stores.length > 0) {
-    // Use the coordinates of the first store as map center
-    centerLat = Number(stores[0].latitude);
-    centerLng = Number(stores[0].longitude);
-  }
+  // Get coordinates of all stores or use default
+  const positions = stores.map(store => [Number(store.latitude), Number(store.longitude)]);
   
-  // This ensures the map is completely recreated when the store data changes
-  useEffect(() => {
-    setMapRendered(false);
-    setTimeout(() => setMapRendered(true), 100);
-  }, [zipCode]);
-  
-  console.log(`Map rendering for zip code ${zipCode} with ${stores.length} stores at [${centerLat}, ${centerLng}]`);
+  // Handle the actual map rendering in a separate component
+  // This approach completely rebuilds the map for each zip code change
   
   return (
     <Card className="overflow-hidden">
+      <style dangerouslySetInnerHTML={{ __html: LEAFLET_CSS }} />
+      
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold">Price Map for {zipCode}</h2>
         <p className="text-sm text-gray-500">
@@ -48,45 +59,126 @@ export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: 
       </div>
       
       <div className="h-[500px] w-full relative">
-        {mapRendered && (
-          <MapContainer 
-            key={`map-${zipCode}-${Date.now()}`}
-            center={[centerLat, centerLng]} 
-            zoom={12}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {/* The MapBounds component fits the map to show all markers */}
-            <MapBounds stores={stores} />
-            
-            {/* Add markers for each store */}
-            {stores.map(store => (
-              <StoreMarker 
-                key={store.id}
-                store={store}
-                minPrice={minPrice}
-                maxPrice={maxPrice}
-                onStoreSelect={onStoreSelect}
-              />
-            ))}
-            
-            {/* Map Legend */}
-            <MapLegend minPrice={minPrice} maxPrice={maxPrice} />
-          </MapContainer>
-        )}
-        
-        {!mapRendered && (
-          <div className="flex items-center justify-center h-full bg-gray-100">
-            <p>Loading map...</p>
-          </div>
-        )}
+        {/* Brand new map instance every time */}
+        <SimpleMap 
+          key={`map-${zipCode}-${Date.now()}`} 
+          stores={stores} 
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          onStoreSelect={onStoreSelect}
+        />
       </div>
     </Card>
   );
+}
+
+// Simple Map implementation without any fancy bounds fitting
+// This is a complete rewrite of the map component for maximum reliability
+function SimpleMap({ stores, minPrice, maxPrice, onStoreSelect }: PriceMapProps) {
+  // Set initial center to the first store location or default US center
+  const initialCenter = stores.length > 0 
+    ? [Number(stores[0].latitude), Number(stores[0].longitude)] 
+    : [39.8283, -98.5795]; // Center of US
+  
+  // Function to set map bounds after it's created
+  const mapRef = useRef<L.Map | null>(null);
+  
+  // This function will be called when the map is created
+  const onMapCreated = (map: L.Map) => {
+    mapRef.current = map;
+    
+    // If we have stores, set the bounds
+    if (stores.length > 0) {
+      try {
+        const positions = stores.map(store => 
+          [Number(store.latitude), Number(store.longitude)] as [number, number]
+        );
+        
+        const bounds = L.latLngBounds(positions);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+      } catch (error) {
+        console.error("Error setting map bounds:", error);
+      }
+    }
+  };
+  
+  // Generate a unique key to force complete re-creation on zip code change
+  const mapKey = `${stores.length > 0 ? stores[0].zipCode : 'default'}-${Date.now()}`;
+  
+  return (
+    <MapContainer
+      key={mapKey}
+      center={initialCenter as [number, number]}
+      zoom={11}
+      style={{ height: '100%', width: '100%' }}
+      whenCreated={onMapCreated}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      
+      {/* Add store markers */}
+      {stores.map(store => (
+        <Marker 
+          key={store.id}
+          position={[Number(store.latitude), Number(store.longitude)]}
+          icon={createPriceMarker(store.currentPrice || 0, minPrice, maxPrice)}
+          eventHandlers={{
+            click: () => onStoreSelect(store.id)
+          }}
+        >
+          <Popup>
+            <div className="p-2 min-w-[200px]">
+              <h3 className="font-semibold">{store.name}</h3>
+              <p className="text-sm text-gray-600">{store.address}, {store.city}</p>
+              {store.currentPrice && (
+                <p className="text-sm font-semibold mt-1">Price: ${store.currentPrice.toFixed(2)}</p>
+              )}
+              <div className="mt-2 flex justify-between">
+                <button 
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => onStoreSelect(store.id)}
+                >
+                  View Details
+                </button>
+                <a 
+                  href={getGoogleMapsDirectionsUrl(store.address, store.city, store.state, store.zipCode)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Get Directions
+                </a>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+      
+      {/* Add legend to the map */}
+      <LegendComponent minPrice={minPrice} maxPrice={maxPrice} />
+    </MapContainer>
+  );
+}
+
+// Helper function to create a price marker
+function createPriceMarker(price: number, minPrice: number, maxPrice: number) {
+  const priceColor = getPriceColor(price, minPrice, maxPrice);
+  
+  const html = `
+    <div class="map-price-marker" style="background-color: ${priceColor};">
+      $${price.toFixed(2)}
+    </div>
+  `;
+  
+  return L.divIcon({
+    html,
+    className: '',
+    iconSize: [48, 48],
+    iconAnchor: [24, 24],
+    popupAnchor: [0, -24]
+  });
 }
 
 interface StoreMarkerProps {

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import SearchForm from "@/components/search-form";
-import PriceMap from "@/components/price-map";
+// Import our new simple map component instead of the old one
+import SimplePriceMap from "@/components/simple-price-map";
 import PriceTable from "@/components/price-table";
 import StoreDetailsModal from "@/components/store-details-modal";
 import PriceHistoryChart from "@/components/price-history-chart";
