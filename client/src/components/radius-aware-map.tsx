@@ -240,22 +240,48 @@ function StoreMarker({ store, minPrice, maxPrice, onStoreSelect }: {
 }) {
   const priceColor = getPriceColor(store.currentPrice || 0, minPrice, maxPrice);
   
-  // Create marker HTML
+  // Create marker HTML with tooltip
   const markerHtml = `
-    <div style="
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background-color: ${priceColor};
-      color: white;
-      font-weight: bold;
-      width: 48px;
-      height: 48px;
-      border: 2px solid white;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    ">
+    <div 
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background-color: ${priceColor};
+        color: white;
+        font-weight: bold;
+        width: 48px;
+        height: 48px;
+        border: 2px solid white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        position: relative;
+      "
+      title="${store.name}: $${(store.currentPrice || 0).toFixed(2)}"
+      class="store-marker"
+    >
       $${(store.currentPrice || 0).toFixed(2)}
+      <span 
+        style="
+          position: absolute;
+          bottom: -40px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0,0,0,0.75);
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s;
+          z-index: 1000;
+        "
+        class="store-tooltip"
+      >
+        ${store.name}
+      </span>
     </div>
   `;
   

@@ -95,4 +95,9 @@
   .price-gradient-high {
     background-color: #EF4444; /* Red */
   }
+  
+  /* Map marker tooltip hover effects */
+  .store-marker:hover .store-tooltip {
+    opacity: 1;
+  }
 }

@@ -53,7 +53,19 @@ export default function PriceTable({ stores, minPrice, maxPrice, eggType, onStor
               >
                 <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{store.name}</div>
-                  <div className="text-xs text-gray-500">{store.address}</div>
+                  <div className="text-xs text-gray-500">
+                    <a 
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                        `${store.address}, ${store.city}, ${store.state} ${store.zipCode}`
+                      )}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {store.address}
+                    </a>
+                  </div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap">
                   {store.currentPrice !== null ? (
