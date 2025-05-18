@@ -172,6 +172,7 @@ export class MemStorage implements IStorage {
   private initSampleData() {
     // Create sample stores
     const sampleStores: InsertStore[] = [
+      // San Francisco area stores
       {
         name: "Trader Joe's",
         address: "555 Market St",
@@ -219,6 +220,56 @@ export class MemStorage implements IStorage {
         phone: "(415) 555-3456",
         website: "https://www.rainbowgrocery.org",
         hours: "9:00 AM - 8:00 PM"
+      },
+      
+      // Colorado area stores (80126 zip code - Highlands Ranch/Lone Tree)
+      {
+        name: "King Soopers",
+        address: "9551 S University Blvd",
+        city: "Highlands Ranch",
+        state: "CO",
+        zipCode: "80126",
+        latitude: "39.5436",
+        longitude: "-104.9712",
+        phone: "(303) 470-7506",
+        website: "https://www.kingsoopers.com",
+        hours: "5:00 AM - 11:00 PM"
+      },
+      {
+        name: "Sprouts Farmers Market",
+        address: "9751 S University Blvd",
+        city: "Highlands Ranch",
+        state: "CO",
+        zipCode: "80126",
+        latitude: "39.5385",
+        longitude: "-104.9709",
+        phone: "(303) 470-1296",
+        website: "https://www.sprouts.com",
+        hours: "7:00 AM - 10:00 PM"
+      },
+      {
+        name: "Natural Grocers",
+        address: "8601 S Quebec St",
+        city: "Highlands Ranch",
+        state: "CO",
+        zipCode: "80126",
+        latitude: "39.5732",
+        longitude: "-104.9082",
+        phone: "(303) 470-0038",
+        website: "https://www.naturalgrocers.com",
+        hours: "8:00 AM - 9:00 PM"
+      },
+      {
+        name: "Whole Foods Market",
+        address: "9366 S Colorado Blvd",
+        city: "Highlands Ranch",
+        state: "CO",
+        zipCode: "80126",
+        latitude: "39.5512",
+        longitude: "-104.9708",
+        phone: "(303) 470-1775",
+        website: "https://www.wholefoodsmarket.com",
+        hours: "7:00 AM - 10:00 PM"
       }
     ];
     
@@ -232,7 +283,10 @@ export class MemStorage implements IStorage {
     const today = new Date();
     const oneDay = 24 * 60 * 60 * 1000;
     
-    [1, 2, 3, 4].forEach(storeId => {
+    // Get all store IDs - now includes Colorado stores too
+    const allStoreIds = Array.from(this.storesData.keys());
+    
+    allStoreIds.forEach(storeId => {
       // Current prices
       this.createSamplePrice(storeId, "brown", this.getBasePriceForStore(storeId), today);
       this.createSamplePrice(storeId, "white", this.getBasePriceForStore(storeId) - 0.2, today);
