@@ -22,7 +22,7 @@ export default function Home() {
   const [historyStoreId, setHistoryStoreId] = useState<string>("all");
   
   // Search query
-  const { data: searchResults, isLoading, isError, error } = useQuery<SearchResultsResponse>({
+  const { data: searchResults, isLoading, isError, error, refetch } = useQuery<SearchResultsResponse>({
     queryKey: [`/api/prices?zipCode=${zipCode}&radius=${radius}&eggType=${eggType}`],
     enabled: zipCode.length === 5 && radius >= 1 && radius <= 20,
   });
@@ -32,6 +32,11 @@ export default function Home() {
     setZipCode(newZipCode);
     setRadius(newRadius);
     setEggType(newEggType);
+    
+    // Force a refetch when search parameters change
+    setTimeout(() => {
+      refetch();
+    }, 100);
   };
   
   // Handle store selection for modal
