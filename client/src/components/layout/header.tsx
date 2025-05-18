@@ -9,7 +9,7 @@ export default function Header({ lastUpdated }: HeaderProps) {
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <img 
-              src="/images/logo.png" 
+              src="./images/logo.png" 
               alt="Egg Tracker Logo" 
               className="h-12 w-auto mr-3" 
             />
