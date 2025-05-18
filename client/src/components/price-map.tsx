@@ -25,10 +25,13 @@ interface PriceMapProps {
 }
 
 export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: PriceMapProps) {
-  // Center the map on the first store, or default to San Francisco
+  // Use a key to force remount of the map when stores list changes
+  const mapKey = `map-${stores.length > 0 ? stores[0].zipCode : 'empty'}-${stores.length}`;
+  
+  // Center the map on the first store, or use a default center
   const initialCenter = stores.length > 0
     ? [Number(stores[0].latitude), Number(stores[0].longitude)]
-    : [37.7749, -122.4194]; // San Francisco coordinates
+    : [39.8283, -98.5795]; // Center of the US
   
   return (
     <Card className="overflow-hidden">
@@ -40,9 +43,11 @@ export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: 
       </div>
       
       <div className="leaflet-container">
+        {/* Use a key to force remount when stores change */}
         <MapContainer 
+          key={mapKey}
           center={[initialCenter[0], initialCenter[1]] as [number, number]} 
-          zoom={13} 
+          zoom={stores.length > 0 ? 13 : 4}
           style={{ height: '500px', width: '100%' }}
         >
           <TileLayer
@@ -142,13 +147,27 @@ function MapBounds({ stores }: MapBoundsProps) {
   const map = useMap();
   
   useEffect(() => {
-    if (stores.length === 0) return;
+    // If no stores are found, center on the default location based on zip code
+    if (stores.length === 0) {
+      // Default to a central US location if no stores
+      map.setView([39.8283, -98.5795], 4);
+      return;
+    }
     
-    const bounds = new L.LatLngBounds(
-      stores.map(store => [Number(store.latitude), Number(store.longitude)])
-    );
-    
-    map.fitBounds(bounds, { padding: [50, 50] });
+    // Create bounds from all store locations and fit the map to these bounds
+    try {
+      const bounds = new L.LatLngBounds(
+        stores.map(store => [Number(store.latitude), Number(store.longitude)])
+      );
+      
+      // Add a timeout to ensure the map has fully initialized
+      setTimeout(() => {
+        map.invalidateSize();
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }, 100);
+    } catch (error) {
+      console.error("Error setting map bounds:", error);
+    }
   }, [map, stores]);
   
   return null;

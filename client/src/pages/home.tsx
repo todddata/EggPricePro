@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import SearchForm from "@/components/search-form";
 import PriceMap from "@/components/price-map";
 import PriceTable from "@/components/price-table";
@@ -43,8 +44,10 @@ export default function Home() {
     setRadius(newRadius);
     setEggType(newEggType);
     
-    // Force a reset and refetch when search parameters change
-    // This ensures the query is re-run even if the results come back as 304 Not Modified
+    // Reset the cache and force a fresh API request
+    queryClient.removeQueries({ queryKey: ["prices"] });
+    
+    // Refetch with new parameters
     setTimeout(() => {
       refetch().catch(err => {
         console.error("Error when refetching data:", err);
