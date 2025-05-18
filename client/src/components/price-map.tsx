@@ -1,21 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { getPriceColor } from "@/lib/price-utils";
 import { getGoogleMapsDirectionsUrl } from "@/lib/map-utils";
 import type { StoreWithPrices } from "@shared/schema";
-
-// Setup map marker icons
-const defaultIcon = new L.Icon({
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
 
 interface PriceMapProps {
   stores: StoreWithPrices[];
@@ -25,64 +14,76 @@ interface PriceMapProps {
 }
 
 export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: PriceMapProps) {
-  // Add detailed logging to track map updates
-  console.log("PriceMap received stores:", 
-    stores.map(s => ({ id: s.id, name: s.name, zipCode: s.zipCode, lat: s.latitude, lng: s.longitude }))
-  );
+  // Track when the map has been rendered
+  const [mapRendered, setMapRendered] = useState(false);
   
-  // Use a key to force complete remount of the map component with every render
-  // Include all store IDs in the key to ensure it's truly unique on each data change
-  const storeIds = stores.map(s => s.id).join('-');
-  const mapKey = `map-${stores.length > 0 ? stores[0].zipCode : 'empty'}-${storeIds}-${Date.now()}`;
+  // Get zip code for display
+  const zipCode = stores.length > 0 ? stores[0].zipCode : "94110";
   
-  console.log("Map component using key:", mapKey);
+  // Get center coordinates - calculate average lat/lng from all stores
+  let centerLat = 39.8283; // Default center of US
+  let centerLng = -98.5795;
   
-  // Center the map on the first store, or use a default center
-  const initialCenter = stores.length > 0
-    ? [Number(stores[0].latitude), Number(stores[0].longitude)]
-    : [39.8283, -98.5795]; // Center of the US
-    
-  console.log("Map initial center set to:", initialCenter);
+  if (stores.length > 0) {
+    // Use the coordinates of the first store as map center
+    centerLat = Number(stores[0].latitude);
+    centerLng = Number(stores[0].longitude);
+  }
+  
+  // This ensures the map is completely recreated when the store data changes
+  useEffect(() => {
+    setMapRendered(false);
+    setTimeout(() => setMapRendered(true), 100);
+  }, [zipCode]);
+  
+  console.log(`Map rendering for zip code ${zipCode} with ${stores.length} stores at [${centerLat}, ${centerLng}]`);
   
   return (
     <Card className="overflow-hidden">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold">Price Map for {stores.length > 0 && stores[0].zipCode ? stores[0].zipCode : "94110"}</h2>
+        <h2 className="text-lg font-semibold">Price Map for {zipCode}</h2>
         <p className="text-sm text-gray-500">
-          Egg prices at stores within the search radius
+          Showing {stores.length} stores with egg prices
         </p>
       </div>
       
-      <div className="leaflet-container">
-        {/* Completely recreate the map container on each render to force proper updates */}
-        <MapContainer 
-          key={mapKey}
-          center={[initialCenter[0], initialCenter[1]] as [number, number]} 
-          zoom={stores.length > 0 ? 13 : 4}
-          style={{ height: '500px', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          
-          {/* Center the map on our stores */}
-          <MapBounds stores={stores} />
-          
-          {/* Add markers for each store */}
-          {stores.map(store => (
-            <StoreMarker 
-              key={store.id}
-              store={store}
-              minPrice={minPrice}
-              maxPrice={maxPrice}
-              onStoreSelect={onStoreSelect}
+      <div className="h-[500px] w-full relative">
+        {mapRendered && (
+          <MapContainer 
+            key={`map-${zipCode}-${Date.now()}`}
+            center={[centerLat, centerLng]} 
+            zoom={12}
+            style={{ height: '100%', width: '100%' }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-          ))}
-          
-          {/* Map Legend */}
-          <MapLegend minPrice={minPrice} maxPrice={maxPrice} />
-        </MapContainer>
+            
+            {/* The MapBounds component fits the map to show all markers */}
+            <MapBounds stores={stores} />
+            
+            {/* Add markers for each store */}
+            {stores.map(store => (
+              <StoreMarker 
+                key={store.id}
+                store={store}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                onStoreSelect={onStoreSelect}
+              />
+            ))}
+            
+            {/* Map Legend */}
+            <MapLegend minPrice={minPrice} maxPrice={maxPrice} />
+          </MapContainer>
+        )}
+        
+        {!mapRendered && (
+          <div className="flex items-center justify-center h-full bg-gray-100">
+            <p>Loading map...</p>
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -96,11 +97,23 @@ interface StoreMarkerProps {
 }
 
 function StoreMarker({ store, minPrice, maxPrice, onStoreSelect }: StoreMarkerProps) {
-  // Create a custom marker
+  // Create a custom circular marker with the price as text
   const priceColor = getPriceColor(store.currentPrice || 0, minPrice, maxPrice);
   
   const markerHtml = `
-    <div class="map-marker" style="background-color: ${priceColor}; width: 48px; height: 48px;">
+    <div style="
+      background-color: ${priceColor}; 
+      color: white; 
+      border-radius: 50%; 
+      width: 50px; 
+      height: 50px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-weight: bold;
+      border: 2px solid white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    ">
       ${store.currentPrice ? `$${store.currentPrice.toFixed(2)}` : 'N/A'}
     </div>
   `;
@@ -108,8 +121,9 @@ function StoreMarker({ store, minPrice, maxPrice, onStoreSelect }: StoreMarkerPr
   const customIcon = L.divIcon({
     html: markerHtml,
     className: '',
-    iconSize: [48, 48],
-    iconAnchor: [24, 24]
+    iconSize: [50, 50],
+    iconAnchor: [25, 25],
+    popupAnchor: [0, -25]
   });
   
   return (
@@ -121,11 +135,11 @@ function StoreMarker({ store, minPrice, maxPrice, onStoreSelect }: StoreMarkerPr
       }}
     >
       <Popup>
-        <div className="p-2">
+        <div className="p-2 min-w-[200px]">
           <h3 className="font-semibold text-base">{store.name}</h3>
-          <p className="text-sm text-gray-600">{store.address}</p>
+          <p className="text-sm text-gray-600">{store.address}, {store.city}</p>
           {store.currentPrice && (
-            <p className="text-sm font-semibold mt-1">${store.currentPrice.toFixed(2)}</p>
+            <p className="text-sm font-semibold mt-1">Price: ${store.currentPrice.toFixed(2)}</p>
           )}
           <div className="mt-2 flex justify-between items-center">
             <button 
@@ -150,6 +164,7 @@ function StoreMarker({ store, minPrice, maxPrice, onStoreSelect }: StoreMarkerPr
   );
 }
 
+// Component to automatically fit the map to show all markers
 interface MapBoundsProps {
   stores: StoreWithPrices[];
 }
@@ -157,66 +172,30 @@ interface MapBoundsProps {
 function MapBounds({ stores }: MapBoundsProps) {
   const map = useMap();
   
-  // Create a unique key that changes when store coordinates change
-  const locationKey = stores
-    .map(store => `${store.latitude},${store.longitude}`)
-    .join('|');
-  
   useEffect(() => {
-    console.log("MapBounds effect running with zip code:", 
-      stores.length > 0 ? stores[0].zipCode : "none", 
-      "and store count:", stores.length);
+    if (stores.length === 0) return;
     
-    // If no stores are found, center on the default location
-    if (stores.length === 0) {
-      console.log("No stores found, centering map on US default");
-      map.setView([39.8283, -98.5795], 4);
-      return;
-    }
-    
-    // Force the map to fit to the store locations
     try {
-      const coordinates = stores.map(store => [
+      // Create a LatLngBounds object to fit all store positions
+      const positions = stores.map(store => [
         Number(store.latitude), 
         Number(store.longitude)
       ] as [number, number]);
       
-      console.log("Setting map bounds to coordinates in zip code:", 
-        stores[0].zipCode, 
-        "coordinates:", coordinates);
+      // Create bounds and add some padding
+      const bounds = L.latLngBounds(positions);
       
-      const bounds = new L.LatLngBounds(coordinates);
+      // First invalidate size to ensure the map container is properly measured
+      map.invalidateSize();
       
-      // Use a sequence of timeouts to ensure the map properly updates
-      // First force an invalidation of the map size
-      map.invalidateSize({ animate: false });
-      
-      // Then fit the bounds with a slight delay
+      // Then fit the bounds after a short delay
       setTimeout(() => {
-        console.log("Fitting map to bounds");
-        map.fitBounds(bounds, { padding: [50, 50], animate: true });
-        
-        // Do a final check to make sure the bounds took effect
-        setTimeout(() => {
-          const mapCenter = map.getCenter();
-          console.log("Map is now centered at:", mapCenter);
-          
-          // If we're still not centered correctly, force it one more time
-          const firstStoreLat = Number(stores[0].latitude);
-          const firstStoreLng = Number(stores[0].longitude);
-          
-          // If map center is far from where it should be, force it directly
-          if (Math.abs(mapCenter.lat - firstStoreLat) > 5 || 
-              Math.abs(mapCenter.lng - firstStoreLng) > 5) {
-            console.log("Map still not centered correctly, forcing center");
-            map.setView([firstStoreLat, firstStoreLng], 11);
-          }
-        }, 300);
-      }, 200);
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+      }, 300);
     } catch (error) {
       console.error("Error setting map bounds:", error);
     }
-  }, [map, locationKey]); // Use locationKey to ensure this runs when store coordinates change
+  }, [map, stores]);
   
   return null;
 }
@@ -238,16 +217,17 @@ function MapLegend({ minPrice, maxPrice }: MapLegendProps) {
     const legend = new L.Control({ position: 'bottomright' });
     
     legend.onAdd = () => {
-      const div = L.DomUtil.create('div', 'bg-white p-2 rounded shadow-md text-sm');
+      const div = L.DomUtil.create('div', '');
+      div.className = 'bg-white p-3 rounded-md shadow-lg text-sm';
       
       div.innerHTML = `
-        <div class="text-xs font-medium mb-1">Price Range</div>
-        <div class="flex items-center space-x-1">
-          <div class="w-4 h-4 rounded" style="background-color: #10B981;"></div>
-          <span class="text-xs">$${minPrice.toFixed(2)}</span>
-          <div class="w-10 h-1 bg-gradient-to-r from-green-500 to-red-500"></div>
-          <div class="w-4 h-4 rounded" style="background-color: #EF4444;"></div>
-          <span class="text-xs">$${maxPrice.toFixed(2)}</span>
+        <div class="font-medium mb-1 text-gray-800">Price Range</div>
+        <div class="flex items-center space-x-2">
+          <div class="w-5 h-5 rounded-full" style="background-color: #10B981;"></div>
+          <span>$${minPrice.toFixed(2)}</span>
+          <div class="w-16 h-2 bg-gradient-to-r from-green-500 via-yellow-400 to-red-500 rounded"></div>
+          <div class="w-5 h-5 rounded-full" style="background-color: #EF4444;"></div>
+          <span>$${maxPrice.toFixed(2)}</span>
         </div>
       `;
       
