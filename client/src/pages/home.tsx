@@ -101,7 +101,7 @@ export default function Home() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             <div className="lg:col-span-2">
-              <PriceMap 
+              <SimplePriceMap 
                 stores={searchResults.stores}
                 minPrice={searchResults.minPrice || 0}
                 maxPrice={searchResults.maxPrice || 0}
