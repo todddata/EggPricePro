@@ -157,29 +157,66 @@ interface MapBoundsProps {
 function MapBounds({ stores }: MapBoundsProps) {
   const map = useMap();
   
+  // Create a unique key that changes when store coordinates change
+  const locationKey = stores
+    .map(store => `${store.latitude},${store.longitude}`)
+    .join('|');
+  
   useEffect(() => {
-    // If no stores are found, center on the default location based on zip code
+    console.log("MapBounds effect running with zip code:", 
+      stores.length > 0 ? stores[0].zipCode : "none", 
+      "and store count:", stores.length);
+    
+    // If no stores are found, center on the default location
     if (stores.length === 0) {
-      // Default to a central US location if no stores
+      console.log("No stores found, centering map on US default");
       map.setView([39.8283, -98.5795], 4);
       return;
     }
     
-    // Create bounds from all store locations and fit the map to these bounds
+    // Force the map to fit to the store locations
     try {
-      const bounds = new L.LatLngBounds(
-        stores.map(store => [Number(store.latitude), Number(store.longitude)])
-      );
+      const coordinates = stores.map(store => [
+        Number(store.latitude), 
+        Number(store.longitude)
+      ] as [number, number]);
       
-      // Add a timeout to ensure the map has fully initialized
+      console.log("Setting map bounds to coordinates in zip code:", 
+        stores[0].zipCode, 
+        "coordinates:", coordinates);
+      
+      const bounds = new L.LatLngBounds(coordinates);
+      
+      // Use a sequence of timeouts to ensure the map properly updates
+      // First force an invalidation of the map size
+      map.invalidateSize({ animate: false });
+      
+      // Then fit the bounds with a slight delay
       setTimeout(() => {
-        map.invalidateSize();
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }, 100);
+        console.log("Fitting map to bounds");
+        map.fitBounds(bounds, { padding: [50, 50], animate: true });
+        
+        // Do a final check to make sure the bounds took effect
+        setTimeout(() => {
+          const mapCenter = map.getCenter();
+          console.log("Map is now centered at:", mapCenter);
+          
+          // If we're still not centered correctly, force it one more time
+          const firstStoreLat = Number(stores[0].latitude);
+          const firstStoreLng = Number(stores[0].longitude);
+          
+          // If map center is far from where it should be, force it directly
+          if (Math.abs(mapCenter.lat - firstStoreLat) > 5 || 
+              Math.abs(mapCenter.lng - firstStoreLng) > 5) {
+            console.log("Map still not centered correctly, forcing center");
+            map.setView([firstStoreLat, firstStoreLng], 11);
+          }
+        }, 300);
+      }, 200);
     } catch (error) {
       console.error("Error setting map bounds:", error);
     }
-  }, [map, stores]);
+  }, [map, locationKey]); // Use locationKey to ensure this runs when store coordinates change
   
   return null;
 }
