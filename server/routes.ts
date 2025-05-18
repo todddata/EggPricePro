@@ -89,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxPrice
       };
       
-      console.log(`Successfully returning ${response.stores.length} stores for zip ${zipCode}`);
+      console.log(`Successfully returning ${response.stores.length} stores for zip ${zipCode} with radius ${radius} miles`);
       res.json(response);
     } catch (error) {
       console.error("Error processing price search:", error);

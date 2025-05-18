@@ -114,7 +114,7 @@ export default function RadiusAwareMap({ stores, minPrice, maxPrice, onStoreSele
       <div className="p-4 border-b">
         <h2 className="text-lg font-medium">Price Map for {zipCode}</h2>
         <p className="text-sm text-gray-500">
-          Showing {stores.length} stores within {radius} miles
+          Showing <span className="font-semibold">{stores.length} stores</span> within <span className="font-semibold">{radius} miles</span>
         </p>
       </div>
       

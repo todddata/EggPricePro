@@ -163,9 +163,36 @@ export class MemStorage implements IStorage {
   
   // Helper methods
   private isWithinRadius(store: Store, zipCode: string, radius: number): boolean {
-    // This is a simplified version for the in-memory storage
-    // Real implementation would use actual geospatial calculation
-    return true; // For development, assume all stores are within radius
+    // For the 80126 zip code, we'll use our pre-defined store distances
+    if (zipCode === "80126") {
+      // Calculate the actual distance between store and zip code center
+      const zipCoords = { lat: 39.5486, lng: -104.9719 }; // Coordinates for 80126
+      const storeLat = Number(store.latitude);
+      const storeLng = Number(store.longitude);
+      
+      // Calculate distance using Haversine formula (rough approximation)
+      const R = 3958.8; // Earth's radius in miles
+      const dLat = (storeLat - zipCoords.lat) * Math.PI / 180;
+      const dLng = (storeLng - zipCoords.lng) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(zipCoords.lat * Math.PI / 180) * Math.cos(storeLat * Math.PI / 180) * 
+        Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+      
+      console.log(`Store ${store.name} is ${distance.toFixed(2)} miles from ${zipCode}`);
+      
+      // Check if the distance is within the specified radius
+      return distance <= radius;
+    } 
+    // For other zip codes, include all stores within the radius using the existing SF data
+    else if (zipCode === "94110" || zipCode === "94105") {
+      return true; // Include all SF stores for any radius
+    }
+    
+    // Default behavior - no stores for unknown zip codes
+    return false;
   }
   
   // Initialize with sample data for development
@@ -222,7 +249,7 @@ export class MemStorage implements IStorage {
         hours: "9:00 AM - 8:00 PM"
       },
       
-      // Colorado area stores (80126 zip code - Highlands Ranch/Lone Tree)
+      // Colorado area stores - 1-5 miles radius (80126 zip code - Highlands Ranch/Lone Tree)
       {
         name: "King Soopers",
         address: "9551 S University Blvd",
@@ -269,6 +296,84 @@ export class MemStorage implements IStorage {
         longitude: "-104.9708",
         phone: "(303) 470-1775",
         website: "https://www.wholefoodsmarket.com",
+        hours: "7:00 AM - 10:00 PM"
+      },
+      
+      // 5-10 miles radius from 80126
+      {
+        name: "Safeway",
+        address: "7375 E Arapahoe Rd",
+        city: "Centennial",
+        state: "CO",
+        zipCode: "80112",
+        latitude: "39.5924",
+        longitude: "-104.9073",
+        phone: "(303) 793-9565",
+        website: "https://www.safeway.com",
+        hours: "6:00 AM - 11:00 PM"
+      },
+      {
+        name: "Trader Joe's",
+        address: "5910 S University Blvd",
+        city: "Greenwood Village",
+        state: "CO",
+        zipCode: "80121",
+        latitude: "39.6079",
+        longitude: "-104.9592",
+        phone: "(303) 221-3482",
+        website: "https://www.traderjoes.com",
+        hours: "8:00 AM - 9:00 PM"
+      },
+      
+      // 10-15 miles radius from 80126
+      {
+        name: "Marczyk Fine Foods",
+        address: "770 E 17th Ave",
+        city: "Denver",
+        state: "CO",
+        zipCode: "80203",
+        latitude: "39.7431",
+        longitude: "-104.9768",
+        phone: "(303) 894-9499",
+        website: "https://www.marczykfinefoods.com",
+        hours: "8:00 AM - 8:00 PM"
+      },
+      {
+        name: "H Mart",
+        address: "2751 S Parker Rd",
+        city: "Aurora",
+        state: "CO",
+        zipCode: "80014",
+        latitude: "39.6670",
+        longitude: "-104.8540",
+        phone: "(303) 745-4592",
+        website: "https://www.hmart.com",
+        hours: "8:00 AM - 10:00 PM"
+      },
+      
+      // 15-20 miles radius from 80126
+      {
+        name: "Pacific Ocean International Marketplace",
+        address: "2200 W Alameda Ave",
+        city: "Denver",
+        state: "CO",
+        zipCode: "80223",
+        latitude: "39.7116",
+        longitude: "-105.0120",
+        phone: "(303) 936-4845",
+        website: "https://www.pacificoceanmarket.com",
+        hours: "9:00 AM - 8:00 PM"
+      },
+      {
+        name: "Lowe's Mercado",
+        address: "10471 E Martin Luther King Jr Blvd",
+        city: "Denver",
+        state: "CO",
+        zipCode: "80238",
+        latitude: "39.7619",
+        longitude: "-104.8696",
+        phone: "(303) 338-5274",
+        website: "https://www.lowesmarkets.com",
         hours: "7:00 AM - 10:00 PM"
       }
     ];
