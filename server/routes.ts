@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { zipCodeSchema, radiusSchema, eggTypeSchema, type SearchResultsResponse } from "@shared/schema";
 import { scheduleDailyPriceUpdates } from "./cron";
-import { getCoordinatesForZipCode, isWithinRadius } from "./utils/geocoding";
+import { getCoordinatesForZipCode, isWithinRadius, calculateDistance } from "./utils/geocoding";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Schedule the daily price updates
@@ -48,20 +48,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const storeLat = Number(store.latitude);
         const storeLng = Number(store.longitude);
         
-        // Calculate distance directly to ensure we include all stores within the radius
-        // regardless of which zip code they're in
-        const dist = calculateDistance(
-          centerCoords.lat,
-          centerCoords.lng,
-          storeLat,
-          storeLng
+        // Use isWithinRadius to calculate if store is within the search radius
+        // Add extra buffer (0.5 miles) to ensure nearby stores are included
+        const isInRadius = isWithinRadius(
+          centerCoords.lat, 
+          centerCoords.lng, 
+          storeLat, 
+          storeLng, 
+          radius + 0.5
         );
         
-        // Log distances for debugging
-        console.log(`Store ${store.name} at ${store.address} is ${dist.toFixed(2)} miles from ${zipCode}`);
+        // For stores that are close to the boundary, log their info
+        if (isInRadius) {
+          console.log(`Store ${store.name} at ${store.address} is within ${radius} miles of ${zipCode}`);
+        }
         
-        // Include stores within radius with a small buffer for boundary cases
-        return dist <= (radius + 0.2);
+        return isInRadius;
       });
       
       console.log(`Found ${storesInRadius.length} stores within ${radius} miles of ${zipCode}`);

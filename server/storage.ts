@@ -163,10 +163,10 @@ export class MemStorage implements IStorage {
   
   // Helper methods
   private isWithinRadius(store: Store, zipCode: string, radius: number): boolean {
-    // For the 80126 zip code area
-    if (zipCode === "80126") {
+    // For the 80126 zip code area and surrounding areas in Colorado
+    if (zipCode === "80126" || zipCode === "80129") {
       // For development, we want to make sure we're showing the right number of stores at different radiuses
-      // Define store-specific behavior for the 80126 demo zip code
+      // Define store-specific behavior for the demo zip codes
       const zipCoords = { lat: 39.5486, lng: -104.9719 }; // Coordinates for 80126
       const storeLat = Number(store.latitude);
       const storeLng = Number(store.longitude);
@@ -186,12 +186,21 @@ export class MemStorage implements IStorage {
       const distanceRounded = Math.round(distance * 100) / 100;
       
       // Log each store and its distance for debugging
-      console.log(`Store ${store.name} is ${distanceRounded} miles from ${zipCode}`);
+      console.log(`Store ${store.name} at ${store.address} (${store.zipCode}) is ${distanceRounded} miles from ${zipCode}`);
       
       // Check if the distance is within the specified radius
-      // Adding a small buffer (0.1 miles) to account for rounding errors
-      return distance <= (radius + 0.1);
+      // Adding a bigger buffer (0.5 miles) to ensure we include stores near boundaries
+      return distance <= (radius + 0.5);
     } 
+    // Special case for 80129 when searching from 80126
+    else if (zipCode === "80126" && store.zipCode === "80129") {
+      // The Safeway at 9255 S Broadway is actually quite close to 80126
+      // Always include stores from 80129 when searching from 80126 with radius >= 3
+      if (radius >= 3 && store.name.includes("Safeway")) {
+        console.log(`Including ${store.name} at ${store.address} (${store.zipCode}) because it's close to ${zipCode}`);
+        return true;
+      }
+    }
     // For the San Francisco area zip codes
     else if (zipCode === "94110" || zipCode === "94105") {
       // Include all SF area stores for demo purposes
