@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import SearchForm from "@/components/search-form";
-// Import our ultra simplified map component that should fix all zoom issues
-import UltraSimpleMap from "@/components/ultra-simple-map";
+// Import our radius-aware map component specifically designed to handle radius changes
+import RadiusAwareMap from "@/components/radius-aware-map";
 import PriceTable from "@/components/price-table";
 import StoreDetailsModal from "@/components/store-details-modal";
 import PriceHistoryChart from "@/components/price-history-chart";
@@ -101,7 +101,7 @@ export default function Home() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             <div className="lg:col-span-2">
-              <UltraSimpleMap 
+              <RadiusAwareMap 
                 stores={searchResults.stores}
                 minPrice={searchResults.minPrice || 0}
                 maxPrice={searchResults.maxPrice || 0}
