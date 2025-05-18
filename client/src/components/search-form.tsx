@@ -45,6 +45,8 @@ export default function SearchForm({
   });
   
   const handleSubmit = (values: SearchFormValues) => {
+    // Add a console log to verify the search values
+    console.log("Searching with values:", values);
     onSearch(values.zipCode, values.radius, values.eggType);
   };
   

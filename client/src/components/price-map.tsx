@@ -39,29 +39,35 @@ export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: 
         </p>
       </div>
       
-      <MapContainer center={[initialCenter[0], initialCenter[1]] as [number, number]} zoom={13}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        {/* Center the map on our stores */}
-        <MapBounds stores={stores} />
-        
-        {/* Add markers for each store */}
-        {stores.map(store => (
-          <StoreMarker 
-            key={store.id}
-            store={store}
-            minPrice={minPrice}
-            maxPrice={maxPrice}
-            onStoreSelect={onStoreSelect}
+      <div className="leaflet-container">
+        <MapContainer 
+          center={[initialCenter[0], initialCenter[1]] as [number, number]} 
+          zoom={13} 
+          style={{ height: '500px', width: '100%' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-        ))}
-        
-        {/* Map Legend */}
-        <MapLegend minPrice={minPrice} maxPrice={maxPrice} />
-      </MapContainer>
+          
+          {/* Center the map on our stores */}
+          <MapBounds stores={stores} />
+          
+          {/* Add markers for each store */}
+          {stores.map(store => (
+            <StoreMarker 
+              key={store.id}
+              store={store}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              onStoreSelect={onStoreSelect}
+            />
+          ))}
+          
+          {/* Map Legend */}
+          <MapLegend minPrice={minPrice} maxPrice={maxPrice} />
+        </MapContainer>
+      </div>
     </Card>
   );
 }

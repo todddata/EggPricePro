@@ -36,14 +36,15 @@ export default function Home() {
   
   // Handle search submission
   const handleSearch = (newZipCode: string, newRadius: number, newEggType: "brown" | "white") => {
+    console.log("Home page received search:", { newZipCode, newRadius, newEggType });
+    
+    // Update state with new search parameters
     setZipCode(newZipCode);
     setRadius(newRadius);
     setEggType(newEggType);
     
-    // Force a refetch when search parameters change
-    setTimeout(() => {
-      refetch();
-    }, 100);
+    // Force immediate refetch when search parameters change
+    refetch();
   };
   
   // Handle store selection for modal
