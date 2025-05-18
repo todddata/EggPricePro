@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,6 +34,7 @@ export default function SearchForm({
 }: SearchFormProps) {
   const [radiusValue, setRadiusValue] = useState(initialRadius);
   const { toast } = useToast();
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const form = useForm<SearchFormValues>({
     resolver: zodResolver(searchSchema),
@@ -50,6 +51,20 @@ export default function SearchForm({
     onSearch(values.zipCode, values.radius, values.eggType);
   };
   
+  // Create a debounced search function to prevent too many updates
+  const debouncedSearch = useCallback((zipCode: string, radius: number, eggType: "brown" | "white") => {
+    // Clear any pending debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Set a new timer to trigger search after delay
+    debounceTimerRef.current = setTimeout(() => {
+      console.log("Debounced search executing:", { zipCode, radius, eggType });
+      onSearch(zipCode, radius, eggType);
+    }, 300); // 300ms delay
+  }, [onSearch]);
+  
   const updateRadius = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
     setRadiusValue(value);
@@ -61,8 +76,8 @@ export default function SearchForm({
     
     // Only trigger search if zipCode is valid (5 digits)
     if (/^\d{5}$/.test(zipCode)) {
-      console.log("Auto-searching on radius change:", { zipCode, radius: value, eggType });
-      onSearch(zipCode, value, eggType);
+      console.log("Preparing debounced search for radius change:", { zipCode, radius: value, eggType });
+      debouncedSearch(zipCode, value, eggType);
     }
   };
   
@@ -77,6 +92,7 @@ export default function SearchForm({
     // Only trigger search if zipCode is valid
     if (/^\d{5}$/.test(zipCode)) {
       console.log("Auto-searching on egg type change:", { zipCode, radius, eggType });
+      // Use the direct search for egg type changes since they are toggle actions (not continuous)
       onSearch(zipCode, radius, eggType);
     }
   };
