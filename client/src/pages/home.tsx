@@ -23,7 +23,14 @@ export default function Home() {
   
   // Search query
   const { data: searchResults, isLoading, isError, error, refetch } = useQuery<SearchResultsResponse>({
-    queryKey: [`/api/prices?zipCode=${zipCode}&radius=${radius}&eggType=${eggType}`],
+    queryKey: ["prices", zipCode, radius, eggType],
+    queryFn: async () => {
+      const response = await fetch(`/api/prices?zipCode=${zipCode}&radius=${radius}&eggType=${eggType}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch prices');
+      }
+      return response.json();
+    },
     enabled: zipCode.length === 5 && radius >= 1 && radius <= 20,
   });
   
