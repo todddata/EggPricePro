@@ -54,11 +54,31 @@ export default function SearchForm({
     const value = parseInt(e.target.value, 10);
     setRadiusValue(value);
     form.setValue("radius", value);
+    
+    // Trigger the search with the current form values when radius changes
+    const zipCode = form.getValues("zipCode");
+    const eggType = form.getValues("eggType");
+    
+    // Only trigger search if zipCode is valid (5 digits)
+    if (/^\d{5}$/.test(zipCode)) {
+      console.log("Auto-searching on radius change:", { zipCode, radius: value, eggType });
+      onSearch(zipCode, value, eggType);
+    }
   };
   
   const toggleEggType = (checked: boolean) => {
     const eggType = checked ? "brown" : "white";
     form.setValue("eggType", eggType);
+    
+    // Also trigger a search when egg type changes
+    const zipCode = form.getValues("zipCode");
+    const radius = form.getValues("radius");
+    
+    // Only trigger search if zipCode is valid
+    if (/^\d{5}$/.test(zipCode)) {
+      console.log("Auto-searching on egg type change:", { zipCode, radius, eggType });
+      onSearch(zipCode, radius, eggType);
+    }
   };
 
   return (
