@@ -43,8 +43,13 @@ export default function Home() {
     setRadius(newRadius);
     setEggType(newEggType);
     
-    // Force immediate refetch when search parameters change
-    refetch();
+    // Force a reset and refetch when search parameters change
+    // This ensures the query is re-run even if the results come back as 304 Not Modified
+    setTimeout(() => {
+      refetch().catch(err => {
+        console.error("Error when refetching data:", err);
+      });
+    }, 100);
   };
   
   // Handle store selection for modal
