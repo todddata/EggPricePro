@@ -22,17 +22,22 @@ export default function Home() {
   // Store for price history chart
   const [historyStoreId, setHistoryStoreId] = useState<string>("all");
   
-  // Search query
+  // Stable query key to prevent infinite requests
   const { data: searchResults, isLoading, isError, error, refetch } = useQuery<SearchResultsResponse>({
     queryKey: ["prices", zipCode, radius, eggType],
     queryFn: async () => {
-      const response = await fetch(`/api/prices?zipCode=${zipCode}&radius=${radius}&eggType=${eggType}`);
+      console.log(`Fetching data for zip code: ${zipCode}, radius: ${radius}, egg type: ${eggType}`);
+      const response = await fetch(
+        `/api/prices?zipCode=${zipCode}&radius=${radius}&eggType=${eggType}`,
+        { cache: 'no-store' }
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch prices');
       }
       return response.json();
     },
     enabled: zipCode.length === 5 && radius >= 1 && radius <= 20,
+    staleTime: 0, // Consider data stale immediately
   });
   
   // Handle search submission
@@ -44,10 +49,11 @@ export default function Home() {
     setRadius(newRadius);
     setEggType(newEggType);
     
-    // Reset the cache and force a fresh API request
-    queryClient.removeQueries({ queryKey: ["prices"] });
+    // Force a complete reset of the query cache for prices
+    queryClient.invalidateQueries({ queryKey: ["prices"] });
+    queryClient.resetQueries({ queryKey: ["prices"] });
     
-    // Refetch with new parameters
+    // Refetch data with the new parameters
     setTimeout(() => {
       refetch().catch(err => {
         console.error("Error when refetching data:", err);

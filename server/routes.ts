@@ -12,6 +12,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search for egg prices by zip code and radius
   app.get("/api/prices", async (req, res) => {
     try {
+      console.log("API request received for prices:", req.query);
       const zipCode = req.query.zipCode as string;
       const radius = parseInt(req.query.radius as string || "5", 10);
       const eggType = (req.query.eggType as string || "brown").toLowerCase();
@@ -48,8 +49,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return isWithinRadius(centerCoords.lat, centerCoords.lng, storeLat, storeLng, radius);
       });
       
+      console.log(`Found ${storesInRadius.length} stores within ${radius} miles of ${zipCode}`);
+      
       // Return empty results rather than error when no stores found
       if (storesInRadius.length === 0) {
+        console.log(`No stores found within ${radius} miles of ${zipCode}`);
         return res.json({
           stores: [],
           minPrice: null,
@@ -57,8 +61,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Add the zipCode to all store records for client reference
+      const storesWithZipCode = storesInRadius.map(store => ({
+        ...store,
+        zipCode: zipCode  // Add requested zip code to each store
+      }));
+      
       // Get the latest prices for each store
-      const storeIds = storesInRadius.map(store => store.id);
+      const storeIds = storesWithZipCode.map(store => store.id);
       const storesWithPrices = await storage.getStoresWithPrices(storeIds, eggType);
       
       // Calculate min and max prices for the color gradient
@@ -71,11 +81,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return the search results
       const response: SearchResultsResponse = {
-        stores: storesWithPrices,
+        stores: storesWithPrices.map(store => ({
+          ...store,
+          zipCode: zipCode  // Ensure zipCode is in the store data
+        })),
         minPrice,
         maxPrice
       };
       
+      console.log(`Successfully returning ${response.stores.length} stores for zip ${zipCode}`);
       res.json(response);
     } catch (error) {
       console.error("Error processing price search:", error);

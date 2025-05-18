@@ -36,7 +36,7 @@ export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: 
   return (
     <Card className="overflow-hidden">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold">Price Map</h2>
+        <h2 className="text-lg font-semibold">Price Map for {stores.length > 0 && stores[0].zipCode ? stores[0].zipCode : "94110"}</h2>
         <p className="text-sm text-gray-500">
           Egg prices at stores within the search radius
         </p>

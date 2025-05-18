@@ -23,7 +23,7 @@ export default function PriceTable({ stores, minPrice, maxPrice, eggType, onStor
   return (
     <Card className="bg-white rounded-lg shadow-sm h-full">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold">Price Listing</h2>
+        <h2 className="text-lg font-semibold">Price Listing for {stores.length > 0 && stores[0].zipCode ? stores[0].zipCode : "94110"}</h2>
         <p className="text-sm text-gray-500">
           {eggType === "brown" ? "Brown" : "White"} Cage-Free Large Eggs
         </p>
