@@ -48,8 +48,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return isWithinRadius(centerCoords.lat, centerCoords.lng, storeLat, storeLng, radius);
       });
       
+      // Return empty results rather than error when no stores found
       if (storesInRadius.length === 0) {
-        return res.status(404).json({ message: "No stores found within the specified radius." });
+        return res.json({
+          stores: [],
+          minPrice: null,
+          maxPrice: null
+        });
       }
       
       // Get the latest prices for each store
