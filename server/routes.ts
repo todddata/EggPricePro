@@ -42,12 +42,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all stores
       const allStores = await storage.getStores();
       
-      // Filter stores by distance - improved accuracy for demonstration
+      // Get all stores within radius regardless of zip code
+      // This is critical to show stores from adjacent zip codes
       const storesInRadius = allStores.filter(store => {
         const storeLat = Number(store.latitude);
         const storeLng = Number(store.longitude);
-        // Add a slight buffer (0.1 miles) to include edge cases
-        return isWithinRadius(centerCoords.lat, centerCoords.lng, storeLat, storeLng, radius + 0.1);
+        
+        // Calculate distance directly to ensure we include all stores within the radius
+        // regardless of which zip code they're in
+        const dist = calculateDistance(
+          centerCoords.lat,
+          centerCoords.lng,
+          storeLat,
+          storeLng
+        );
+        
+        // Log distances for debugging
+        console.log(`Store ${store.name} at ${store.address} is ${dist.toFixed(2)} miles from ${zipCode}`);
+        
+        // Include stores within radius with a small buffer for boundary cases
+        return dist <= (radius + 0.2);
       });
       
       console.log(`Found ${storesInRadius.length} stores within ${radius} miles of ${zipCode}`);

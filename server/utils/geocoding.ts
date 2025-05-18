@@ -28,6 +28,10 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
     
     // Denver/Colorado area
     "80126": { lat: 39.5486, lng: -104.9719 }, // Highlands Ranch/Lone Tree, Colorado
+    "80129": { lat: 39.5410, lng: -105.0210 }, // Highlands Ranch West, Colorado
+    "80130": { lat: 39.5630, lng: -104.9160 }, // Highlands Ranch East, Colorado
+    "80124": { lat: 39.5290, lng: -104.8871 }, // Lone Tree, Colorado
+    "80125": { lat: 39.4879, lng: -105.0055 }, // Roxborough Park, Colorado
     "80202": { lat: 39.7533, lng: -104.9937 }, // Denver Downtown
     "80209": { lat: 39.7108, lng: -104.9550 }, // Denver Washington Park
     "80401": { lat: 39.7555, lng: -105.2211 }, // Golden, Colorado
@@ -42,6 +46,23 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
   if (zipCode in zipCoordinates) {
     console.log(`Found coordinates for ${zipCode}:`, zipCoordinates[zipCode]);
     return zipCoordinates[zipCode];
+  }
+  
+  // Special case: If zipCode is similar to 80126, use the 80126 coordinates with slight offset
+  // This helps demonstrate stores in adjacent areas during testing
+  if (zipCode.startsWith("8012") || zipCode.startsWith("8013") || zipCode.startsWith("8011")) {
+    // Use 80126 as a reference but add a small offset
+    const baseCoords = zipCoordinates["80126"];
+    const lastDigit = parseInt(zipCode.charAt(4), 10);
+    const offset = lastDigit * 0.01; // Small offset based on last digit
+    
+    const nearbyCoords = {
+      lat: baseCoords.lat + offset,
+      lng: baseCoords.lng - offset
+    };
+    
+    console.log(`Using nearby coordinates for ${zipCode} based on 80126:`, nearbyCoords);
+    return nearbyCoords;
   }
   
   // For any other zip code, generate plausible coordinates based on the zip code

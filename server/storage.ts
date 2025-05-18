@@ -320,6 +320,18 @@ export class MemStorage implements IStorage {
         hours: "6:00 AM - 11:00 PM"
       },
       {
+        name: "Safeway",
+        address: "9255 S Broadway",
+        city: "Highlands Ranch",
+        state: "CO",
+        zipCode: "80129",
+        latitude: "39.5467",
+        longitude: "-104.9881",
+        phone: "(303) 683-6372",
+        website: "https://www.safeway.com",
+        hours: "6:00 AM - 11:00 PM"
+      },
+      {
         name: "Trader Joe's",
         address: "5910 S University Blvd",
         city: "Greenwood Village",
