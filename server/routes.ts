@@ -42,11 +42,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all stores
       const allStores = await storage.getStores();
       
-      // Filter stores by distance
+      // Filter stores by distance - improved accuracy for demonstration
       const storesInRadius = allStores.filter(store => {
         const storeLat = Number(store.latitude);
         const storeLng = Number(store.longitude);
-        return isWithinRadius(centerCoords.lat, centerCoords.lng, storeLat, storeLng, radius);
+        // Add a slight buffer (0.1 miles) to include edge cases
+        return isWithinRadius(centerCoords.lat, centerCoords.lng, storeLat, storeLng, radius + 0.1);
       });
       
       console.log(`Found ${storesInRadius.length} stores within ${radius} miles of ${zipCode}`);

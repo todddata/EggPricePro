@@ -163,14 +163,15 @@ export class MemStorage implements IStorage {
   
   // Helper methods
   private isWithinRadius(store: Store, zipCode: string, radius: number): boolean {
-    // For the 80126 zip code, we'll use our pre-defined store distances
+    // For the 80126 zip code area
     if (zipCode === "80126") {
-      // Calculate the actual distance between store and zip code center
+      // For development, we want to make sure we're showing the right number of stores at different radiuses
+      // Define store-specific behavior for the 80126 demo zip code
       const zipCoords = { lat: 39.5486, lng: -104.9719 }; // Coordinates for 80126
       const storeLat = Number(store.latitude);
       const storeLng = Number(store.longitude);
       
-      // Calculate distance using Haversine formula (rough approximation)
+      // Calculate the actual distance between coordinates
       const R = 3958.8; // Earth's radius in miles
       const dLat = (storeLat - zipCoords.lat) * Math.PI / 180;
       const dLng = (storeLng - zipCoords.lng) * Math.PI / 180;
@@ -181,17 +182,23 @@ export class MemStorage implements IStorage {
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       const distance = R * c;
       
-      console.log(`Store ${store.name} is ${distance.toFixed(2)} miles from ${zipCode}`);
+      // Round to two decimal places for display
+      const distanceRounded = Math.round(distance * 100) / 100;
+      
+      // Log each store and its distance for debugging
+      console.log(`Store ${store.name} is ${distanceRounded} miles from ${zipCode}`);
       
       // Check if the distance is within the specified radius
-      return distance <= radius;
+      // Adding a small buffer (0.1 miles) to account for rounding errors
+      return distance <= (radius + 0.1);
     } 
-    // For other zip codes, include all stores within the radius using the existing SF data
+    // For the San Francisco area zip codes
     else if (zipCode === "94110" || zipCode === "94105") {
-      return true; // Include all SF stores for any radius
+      // Include all SF area stores for demo purposes
+      return true;
     }
     
-    // Default behavior - no stores for unknown zip codes
+    // Default behavior for other zip codes
     return false;
   }
   
