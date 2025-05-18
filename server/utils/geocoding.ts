@@ -16,21 +16,46 @@ type Coordinates = {
 export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordinates | null> {
   // In a real app, this would call a geocoding API
   // For now, return hardcoded coordinates for a few zip codes
+  console.log(`Geocoding requested for zip code: ${zipCode}`);
   
   const zipCoordinates: Record<string, Coordinates> = {
+    // San Francisco area
     "94110": { lat: 37.7489, lng: -122.4215 }, // San Francisco, Mission
     "94105": { lat: 37.7897, lng: -122.3995 }, // San Francisco, Financial District
     "94107": { lat: 37.7697, lng: -122.3933 }, // San Francisco, Potrero Hill
     "94103": { lat: 37.7726, lng: -122.4099 }, // San Francisco, SoMa
     "94102": { lat: 37.7797, lng: -122.4186 }, // San Francisco, Tenderloin
+    
+    // Denver/Colorado area
+    "80126": { lat: 39.5486, lng: -104.9719 }, // Highlands Ranch/Lone Tree, Colorado
+    "80202": { lat: 39.7533, lng: -104.9937 }, // Denver Downtown
+    "80209": { lat: 39.7108, lng: -104.9550 }, // Denver Washington Park
+    "80401": { lat: 39.7555, lng: -105.2211 }, // Golden, Colorado
+    
+    // Other major cities
+    "10001": { lat: 40.7501, lng: -73.9950 }, // New York, Manhattan
+    "60601": { lat: 41.8855, lng: -87.6221 }, // Chicago, Loop
+    "90001": { lat: 33.9731, lng: -118.2479 }, // Los Angeles
+    "75001": { lat: 32.9617, lng: -96.8946 }, // Dallas area
   };
   
   if (zipCode in zipCoordinates) {
+    console.log(`Found coordinates for ${zipCode}:`, zipCoordinates[zipCode]);
     return zipCoordinates[zipCode];
   }
   
-  // For any other zip code, return a default SF location
-  return { lat: 37.7749, lng: -122.4194 }; // San Francisco center
+  // For any other zip code, generate plausible coordinates based on the zip code
+  console.log(`No hardcoded coordinates for ${zipCode}, generating approximate location`);
+  
+  // Simple algorithm to generate different coordinates for different zip codes
+  // This isn't geographically accurate but provides visual variety for testing
+  const zipNum = parseInt(zipCode, 10);
+  const lat = 35 + (zipNum % 100) * 0.05;
+  const lng = -100 - (zipNum % 100) * 0.05;
+  
+  const generatedCoords = { lat, lng };
+  console.log(`Generated coordinates for ${zipCode}:`, generatedCoords);
+  return generatedCoords;
 }
 
 /**

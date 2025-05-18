@@ -25,13 +25,24 @@ interface PriceMapProps {
 }
 
 export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: PriceMapProps) {
-  // Use a key to force remount of the map when stores list changes
-  const mapKey = `map-${stores.length > 0 ? stores[0].zipCode : 'empty'}-${stores.length}`;
+  // Add detailed logging to track map updates
+  console.log("PriceMap received stores:", 
+    stores.map(s => ({ id: s.id, name: s.name, zipCode: s.zipCode, lat: s.latitude, lng: s.longitude }))
+  );
+  
+  // Use a key to force complete remount of the map component with every render
+  // Include all store IDs in the key to ensure it's truly unique on each data change
+  const storeIds = stores.map(s => s.id).join('-');
+  const mapKey = `map-${stores.length > 0 ? stores[0].zipCode : 'empty'}-${storeIds}-${Date.now()}`;
+  
+  console.log("Map component using key:", mapKey);
   
   // Center the map on the first store, or use a default center
   const initialCenter = stores.length > 0
     ? [Number(stores[0].latitude), Number(stores[0].longitude)]
     : [39.8283, -98.5795]; // Center of the US
+    
+  console.log("Map initial center set to:", initialCenter);
   
   return (
     <Card className="overflow-hidden">
@@ -43,7 +54,7 @@ export default function PriceMap({ stores, minPrice, maxPrice, onStoreSelect }: 
       </div>
       
       <div className="leaflet-container">
-        {/* Use a key to force remount when stores change */}
+        {/* Completely recreate the map container on each render to force proper updates */}
         <MapContainer 
           key={mapKey}
           center={[initialCenter[0], initialCenter[1]] as [number, number]} 
