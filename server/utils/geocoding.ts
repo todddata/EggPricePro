@@ -209,15 +209,6 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
     lat: baseLat + latOffset,
     lng: baseLng - lngOffset
   };
-  const lngVariation = (lastFourDigits % 50) * 0.03;
-  
-  const generatedCoords = {
-    lat: baseLat + latVariation,
-    lng: baseLng - lngVariation
-  };
-  
-  console.log(`Generated coordinates for ${zipCode}:`, generatedCoords);
-  return generatedCoords;
 }
 
 /**
@@ -225,26 +216,30 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
  * (accurate for short distances)
  */
 export function calculateDistance(
-  lat1: number, 
-  lng1: number, 
-  lat2: number, 
+  lat1: number,
+  lng1: number,
+  lat2: number,
   lng2: number
 ): number {
   const R = 3958.8; // Earth's radius in miles
   const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-           Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-           Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const dLng = toRad(lng2 - lng1);
+  
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  const distance = R * c;
+  
+  return distance;
 }
 
 /**
  * Convert degrees to radians
  */
 function toRad(degrees: number): number {
-  return degrees * Math.PI / 180;
+  return (degrees * Math.PI) / 180;
 }
 
 /**
@@ -265,6 +260,6 @@ export function isWithinRadius(
  * Get the Google Maps URL for directions to a location
  */
 export function getGoogleMapsDirectionsUrl(address: string, city: string, state: string, zipCode: string): string {
-  const formattedAddress = `${address}, ${city}, ${state} ${zipCode}`;
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(formattedAddress)}`;
+  const encodedAddress = encodeURIComponent(`${address}, ${city}, ${state} ${zipCode}`);
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
 }

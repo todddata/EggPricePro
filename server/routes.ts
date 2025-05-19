@@ -74,6 +74,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Generate demo stores for this location
         if (process.env.NODE_ENV === 'development') {
+          // Get accurate coordinates from the geocoding service
+          const coords = await getCoordinatesForZipCode(zipCode);
+          
+          if (!coords) {
+            return res.status(400).json({ message: "Unable to generate coordinates for this zip code." });
+          }
+          
+          // Use the actual coordinates from the geocoding service to ensure stores appear
+          // in the correct geographical location on the map
+          const lat = coords.lat;
+          const lng = coords.lng;
+          
           // Create a store at the center of the search area
           const localStore = await storage.createStore({
             name: "Local Grocery",
@@ -81,8 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             city: getPlaceName(zipCode),
             state: getStateFromZip(zipCode),
             zipCode: zipCode,
-            latitude: String(centerCoords.lat),
-            longitude: String(centerCoords.lng),
+            latitude: String(lat),
+            longitude: String(lng),
             phone: "(555) 123-4567",
             website: "https://www.localgrocery.com",
             hours: "8:00 AM - 9:00 PM"
@@ -95,8 +107,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             city: getPlaceName(zipCode),
             state: getStateFromZip(zipCode),
             zipCode: zipCode,
-            latitude: String(centerCoords.lat + 0.01),
-            longitude: String(centerCoords.lng - 0.01),
+            latitude: String(lat + 0.01),
+            longitude: String(lng - 0.01),
             phone: "(555) 987-6543",
             website: "https://www.farmersmarket.com",
             hours: "7:00 AM - 6:00 PM"
@@ -109,8 +121,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             city: getPlaceName(zipCode),
             state: getStateFromZip(zipCode),
             zipCode: zipCode,
-            latitude: String(centerCoords.lat - 0.02),
-            longitude: String(centerCoords.lng + 0.015),
+            latitude: String(lat - 0.02),
+            longitude: String(lng + 0.015),
             phone: "(555) 345-6789",
             website: "https://www.organicstore.com",
             hours: "9:00 AM - 8:00 PM"
@@ -197,10 +209,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add the zipCode to all store records for client reference
-      const storesWithZipCode = storesInRadius.map(store => ({
-        ...store,
-        zipCode  // Add requested zip code to each store
-      }));
+      // Also, update the coordinates to use the same coordinates as the search location
+      // This ensures that stores created for any zip code show up in the correct geographical location
+      const coords = await getCoordinatesForZipCode(zipCode);
+      
+      const storesWithZipCode = storesInRadius.map(store => {
+        // If this is a dynamically created store, ensure it has the proper location coordinates
+        if (store.zipCode === zipCode && store.latitude !== coords?.lat.toString()) {
+          return {
+            ...store,
+            zipCode,  // Add requested zip code to each store
+            latitude: coords?.lat.toString() || store.latitude,
+            longitude: coords?.lng.toString() || store.longitude
+          };
+        }
+        
+        return {
+          ...store,
+          zipCode  // Add requested zip code to each store
+        };
+      });
       
       // Get the latest prices for each store
       const storeIds = storesWithZipCode.map(store => store.id);
