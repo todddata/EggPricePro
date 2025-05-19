@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allStores = await storage.getStores();
       
       // Get all stores within radius regardless of zip code
-      // This is critical to show stores from adjacent zip codes
+      // Calculate the distance for each store and filter by radius
       const storesInRadius = allStores.filter(store => {
         const storeLat = Number(store.latitude);
         const storeLng = Number(store.longitude);
@@ -68,15 +68,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found ${storesInRadius.length} stores within ${radius} miles of ${zipCode}`);
       
-      // If no stores found, create demo stores for development environment
+      // If no stores found, create demo stores for any valid zip code
       if (storesInRadius.length === 0) {
-        console.log(`No stores found within ${radius} miles of ${zipCode}`);
+        console.log(`No stores found within ${radius} miles of ${zipCode}, creating demo stores`);
         
-        // For development purposes, create demo stores for any valid zip code
-        // This ensures the app always shows relevant results
+        // Generate demo stores for this location
         if (process.env.NODE_ENV === 'development') {
-          console.log(`Creating demo stores for zip ${zipCode}`);
-          
           // Create a store at the center of the search area
           const localStore = await storage.createStore({
             name: "Local Grocery",
@@ -119,54 +116,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
             hours: "9:00 AM - 8:00 PM"
           });
           
-          // Add price data for all three stores
-          // Brown eggs
+          // Add brown egg prices
           await storage.createPrice({
             storeId: localStore.id,
             eggType: "brown",
-            price: String(Math.round((4.29 + (Math.random() * 0.4 - 0.2)) * 100) / 100),
-            recordedAt: new Date()
+            price: String(Math.round((4.29 + (Math.random() * 0.4 - 0.2)) * 100) / 100)
           });
           
           await storage.createPrice({
             storeId: farmersMarket.id,
             eggType: "brown",
-            price: String(Math.round((4.59 + (Math.random() * 0.4 - 0.2)) * 100) / 100),
-            recordedAt: new Date()
+            price: String(Math.round((4.59 + (Math.random() * 0.4 - 0.2)) * 100) / 100)
           });
           
           await storage.createPrice({
             storeId: organicShop.id,
             eggType: "brown",
-            price: String(Math.round((4.89 + (Math.random() * 0.4 - 0.2)) * 100) / 100),
-            recordedAt: new Date()
+            price: String(Math.round((4.89 + (Math.random() * 0.4 - 0.2)) * 100) / 100)
           });
           
-          // White eggs
+          // Add white egg prices
           await storage.createPrice({
             storeId: localStore.id,
             eggType: "white",
-            price: String(Math.round((3.99 + (Math.random() * 0.4 - 0.2)) * 100) / 100),
-            recordedAt: new Date()
+            price: String(Math.round((3.99 + (Math.random() * 0.4 - 0.2)) * 100) / 100)
           });
           
           await storage.createPrice({
             storeId: farmersMarket.id,
             eggType: "white",
-            price: String(Math.round((4.19 + (Math.random() * 0.4 - 0.2)) * 100) / 100),
-            recordedAt: new Date()
+            price: String(Math.round((4.19 + (Math.random() * 0.4 - 0.2)) * 100) / 100)
           });
           
           await storage.createPrice({
             storeId: organicShop.id,
             eggType: "white",
-            price: String(Math.round((4.49 + (Math.random() * 0.4 - 0.2)) * 100) / 100),
-            recordedAt: new Date()
+            price: String(Math.round((4.49 + (Math.random() * 0.4 - 0.2)) * 100) / 100)
           });
           
-          // Recursive call to the same endpoint to get the newly created stores
-          // This avoids duplicating the store retrieval logic
-          return res.redirect(307, `/api/prices?zipCode=${zipCode}&radius=${radius}&eggType=${eggType}`);
+          // Get the newly created stores
+          const createdStores = [localStore, farmersMarket, organicShop];
+          
+          // Add the zipCode to all store records for client reference
+          const storesWithZip = createdStores.map(store => ({
+            ...store,
+            zipCode // Add requested zip code to each store
+          }));
+          
+          // Get the latest prices for each store
+          const storeIds = storesWithZip.map(store => store.id);
+          const storesWithPrices = await storage.getStoresWithPrices(storeIds, eggType);
+          
+          // Calculate min and max prices for the color gradient
+          const prices = storesWithPrices
+            .map(store => store.currentPrice)
+            .filter((price): price is number => price !== null);
+          
+          const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+          const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
+          
+          // Return the search results
+          const response: SearchResultsResponse = {
+            stores: storesWithPrices.map(store => ({
+              ...store,
+              zipCode // Ensure zipCode is in the store data
+            })),
+            minPrice,
+            maxPrice
+          };
+          
+          console.log(`Successfully returning ${response.stores.length} demo stores for zip ${zipCode} with radius ${radius} miles`);
+          return res.json(response);
         }
         
         return res.json({
@@ -179,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add the zipCode to all store records for client reference
       const storesWithZipCode = storesInRadius.map(store => ({
         ...store,
-        zipCode: zipCode  // Add requested zip code to each store
+        zipCode  // Add requested zip code to each store
       }));
       
       // Get the latest prices for each store
@@ -198,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response: SearchResultsResponse = {
         stores: storesWithPrices.map(store => ({
           ...store,
-          zipCode: zipCode  // Ensure zipCode is in the store data
+          zipCode  // Ensure zipCode is in the store data
         })),
         minPrice,
         maxPrice
