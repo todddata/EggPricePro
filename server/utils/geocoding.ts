@@ -35,6 +35,11 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
     "80202": { lat: 39.7533, lng: -104.9937 }, // Denver Downtown
     "80209": { lat: 39.7108, lng: -104.9550 }, // Denver Washington Park
     "80401": { lat: 39.7555, lng: -105.2211 }, // Golden, Colorado
+    "80303": { lat: 39.9884, lng: -105.2582 }, // Boulder South, Colorado
+    "80302": { lat: 40.0138, lng: -105.2936 }, // Boulder Central, Colorado
+    "80304": { lat: 40.0362, lng: -105.2811 }, // Boulder North, Colorado
+    "80301": { lat: 40.0561, lng: -105.1780 }, // Boulder East, Colorado
+    "80305": { lat: 39.9702, lng: -105.2585 }, // Boulder SW, Colorado
     
     // Florida area
     "33426": { lat: 26.6765, lng: -80.1256 }, // Boynton Beach, FL
@@ -50,8 +55,9 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
     "75001": { lat: 32.9617, lng: -96.8946 }, // Dallas area
   };
   
-  if (zipCode in zipCoordinates) {
-    console.log(`Found coordinates for ${zipCode}:`, zipCoordinates[zipCode]);
+  // First check if we have exact coordinates for this zip code
+  if (zipCoordinates[zipCode]) {
+    console.log(`Found exact coordinates for ${zipCode}:`, zipCoordinates[zipCode]);
     return zipCoordinates[zipCode];
   }
   

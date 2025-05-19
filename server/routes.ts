@@ -81,6 +81,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Unable to generate coordinates for this zip code." });
           }
           
+          console.log(`Using precise coordinates for new stores in ${zipCode}:`, coords);
+          
           // Use the actual coordinates from the geocoding service to ensure stores appear
           // in the correct geographical location on the map
           const lat = coords.lat;
