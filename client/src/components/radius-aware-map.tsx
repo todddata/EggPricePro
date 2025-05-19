@@ -196,25 +196,55 @@ function RadiusCircle({
           // For large radius values, we need more padding
           const padding = radius > 10 ? [50, 50] : [30, 30];
           
-          // Apply bounds with animation for smoother transition
-          map.fitBounds(bounds, { 
-            padding: padding,
-            animate: true,
-            duration: 0.5  // Faster animation
-          });
-          
-          // For very large radius values, explicitly set zoom level
-          if (radius > 15) {
-            setTimeout(() => {
-              // Double-check if we need to zoom out more
-              const currentZoom = map.getZoom();
-              const targetZoom = radius > 18 ? 7 : radius > 14 ? 8 : 9;
+          // Check if the map is still valid before attempting to fit bounds
+          if (map && map._loaded) {
+            try {
+              // Apply bounds with animation for smoother transition
+              map.fitBounds(bounds, { 
+                padding: padding,
+                animate: true,
+                duration: 0.5  // Faster animation
+              });
               
-              if (currentZoom > targetZoom) {
-                console.log(`Adjusting zoom from ${currentZoom} to ${targetZoom} for ${radius} mile radius`);
-                map.setZoom(targetZoom);
+              // For very large radius values, explicitly set zoom level
+              if (radius > 15) {
+                setTimeout(() => {
+                  // Make sure map is still valid
+                  if (map && map._loaded) {
+                    try {
+                      // Double-check if we need to zoom out more
+                      const currentZoom = map.getZoom();
+                      const targetZoom = radius > 18 ? 7 : radius > 14 ? 8 : 9;
+                      
+                      if (currentZoom && currentZoom > targetZoom) {
+                        console.log(`Adjusting zoom from ${currentZoom} to ${targetZoom} for ${radius} mile radius`);
+                        map.setZoom(targetZoom);
+                      }
+                    } catch (zoomErr) {
+                      console.log("Error adjusting zoom:", zoomErr);
+                    }
+                  }
+                }, 300);
               }
-            }, 300);
+            } catch (fitErr) {
+              console.log("Error fitting bounds:", fitErr);
+              
+              // Fallback to just setting a zoom level based on radius
+              try {
+                const zoomLevel = radius <= 2 ? 14 :
+                                radius <= 3 ? 13 :
+                                radius <= 5 ? 12 :
+                                radius <= 7 ? 11 :
+                                radius <= 10 ? 10 :
+                                radius <= 14 ? 9 : 
+                                radius <= 18 ? 8 : 7;
+                map.setZoom(zoomLevel);
+              } catch (e) {
+                console.log("Fallback zoom failed:", e);
+              }
+            }
+          } else {
+            console.log("Map not ready yet, skipping bounds fitting");
           }
         } catch (err) {
           console.error("Error fitting map to bounds:", err);
