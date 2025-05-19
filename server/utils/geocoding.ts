@@ -36,6 +36,13 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
     "80209": { lat: 39.7108, lng: -104.9550 }, // Denver Washington Park
     "80401": { lat: 39.7555, lng: -105.2211 }, // Golden, Colorado
     
+    // Florida area
+    "33426": { lat: 26.6765, lng: -80.1256 }, // Boynton Beach, FL
+    "33433": { lat: 26.3749, lng: -80.1489 }, // Boca Raton, FL
+    "33444": { lat: 26.4665, lng: -80.0720 }, // Delray Beach, FL
+    "33458": { lat: 26.9256, lng: -80.1145 }, // Jupiter, FL
+    "33409": { lat: 26.7070, lng: -80.0894 }, // West Palm Beach, FL
+    
     // Other major cities
     "10001": { lat: 40.7501, lng: -73.9950 }, // New York, Manhattan
     "60601": { lat: 41.8855, lng: -87.6221 }, // Chicago, Loop
@@ -65,52 +72,143 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
     return nearbyCoords;
   }
   
-  // For any other zip code, generate more geographically accurate coordinates
+  // For any other zip code, generate geographically appropriate coordinates
   console.log(`No hardcoded coordinates for ${zipCode}, generating approximate location`);
   
-  // Use a more sophisticated algorithm that maps zip code ranges to general US regions
-  const firstDigit = parseInt(zipCode.charAt(0), 10);
-  let baseLat = 39.8; // Default to center of US
+  // Default to center of US
+  let baseLat = 39.8; 
   let baseLng = -98.5;
+  let regionName = "United States";
   
-  // Adjust base coordinates by zip code first digit which follows geographical regions
-  // 0,1: Northeast, 2,3: South Atlantic, 4,5: Midwest, 6,7: Central, 8,9: West
+  // Determine region based on first digit
+  const firstDigit = parseInt(zipCode.charAt(0), 10);
+  
+  // Florida special handling
+  if (zipCode.startsWith("33") || zipCode.startsWith("34")) {
+    regionName = "Florida";
+    
+    if (zipCode.startsWith("33")) {
+      // South Florida (Miami, Fort Lauderdale, Palm Beach)
+      baseLat = 26.2;
+      baseLng = -80.3;
+      regionName = "South Florida";
+    } else {
+      // Central/West Florida (Tampa, Orlando)
+      baseLat = 28.1;
+      baseLng = -82.4;
+      regionName = "Central Florida";
+    }
+    
+    // Add slight variation based on last digits
+    const lastDigits = parseInt(zipCode.substring(3, 5), 10);
+    const latOffset = (lastDigits % 10) * 0.02;
+    const lngOffset = (lastDigits % 7) * 0.03;
+    
+    console.log(`Florida zip code detected (${zipCode}), using ${regionName} coordinates`);
+    return {
+      lat: baseLat + latOffset,
+      lng: baseLng - lngOffset
+    };
+  }
+  
+  // Map first digit to appropriate US region
   switch (firstDigit) {
     case 0:
+      // New England: CT, MA, ME, NH, RI, VT
+      baseLat = 42.5;
+      baseLng = -71.5;
+      regionName = "New England";
+      break;
     case 1:
-      // Northeast
-      baseLat = 41.0;
+      // Northeast: DE, NY, PA
+      baseLat = 40.8;
       baseLng = -74.0;
+      regionName = "Northeast";
       break;
     case 2:
+      // Mid-Atlantic: DC, MD, NC, SC, VA, WV
+      baseLat = 37.5;
+      baseLng = -77.5;
+      regionName = "Mid-Atlantic";
+      break;
     case 3:
-      // South Atlantic
-      baseLat = 35.0;
-      baseLng = -80.0;
+      // Southeast: AL, GA, MS, TN (Florida handled separately)
+      baseLat = 34.0;
+      baseLng = -85.0;
+      regionName = "Southeast";
       break;
     case 4:
-    case 5:
-      // Midwest
+      // Midwest: IN, KY, MI, OH
       baseLat = 40.0;
-      baseLng = -86.0;
+      baseLng = -84.0;
+      regionName = "Midwest (Great Lakes)";
+      break;
+    case 5:
+      // Midwest: IA, MN, MT, ND, SD, WI
+      baseLat = 43.5;
+      baseLng = -93.0;
+      regionName = "Midwest (Northern)";
       break;
     case 6:
-    case 7:
-      // Central
-      baseLat = 38.0;
+      // Central: IL, KS, MO, NE
+      baseLat = 39.0;
       baseLng = -92.0;
+      regionName = "Central";
+      break;
+    case 7:
+      // South Central: AR, LA, OK, TX
+      baseLat = 32.0;
+      baseLng = -97.0;
+      regionName = "South Central";
       break;
     case 8:
+      // Mountain: AZ, CO, ID, NM, NV, UT, WY
+      baseLat = 39.0;
+      baseLng = -106.0;
+      regionName = "Mountain";
+      break;
     case 9:
-      // West
-      baseLat = 37.0;
-      baseLng = -115.0;
+      // Handle specific California/West Coast regions
+      if (zipCode.startsWith("90") || zipCode.startsWith("91")) {
+        // Los Angeles area
+        baseLat = 34.0;
+        baseLng = -118.2;
+        regionName = "Southern California";
+      } else if (zipCode.startsWith("94") || zipCode.startsWith("95")) {
+        // San Francisco/Northern CA
+        baseLat = 37.7;
+        baseLng = -122.4;
+        regionName = "Northern California";
+      } else if (zipCode.startsWith("98") || zipCode.startsWith("99")) {
+        // Seattle/Pacific Northwest
+        baseLat = 47.6;
+        baseLng = -122.3;
+        regionName = "Pacific Northwest";
+      } else if (zipCode.startsWith("96") || zipCode.startsWith("97")) {
+        // Hawaii & Oregon
+        baseLat = 45.5;
+        baseLng = -122.6;
+        regionName = "Hawaii/Oregon";
+      } else {
+        // Other Western areas
+        baseLat = 36.0;
+        baseLng = -119.0;
+        regionName = "Western US";
+      }
       break;
   }
   
-  // Add variation based on the remaining digits to create diverse, but nearby coordinates
-  const lastFourDigits = parseInt(zipCode.substring(1), 10);
-  const latVariation = (lastFourDigits % 100) * 0.02;
+  // Add variation based on the remaining digits to create realistic, but nearby coordinates
+  const lastDigits = parseInt(zipCode.substring(3, 5), 10);
+  const latOffset = (lastDigits % 10) * 0.02;
+  const lngOffset = (lastDigits % 7) * 0.015;
+  
+  console.log(`Generated coordinates for ${zipCode}: { lat: ${baseLat + latOffset}, lng: ${baseLng - lngOffset} }`);
+  
+  return {
+    lat: baseLat + latOffset,
+    lng: baseLng - lngOffset
+  };
   const lngVariation = (lastFourDigits % 50) * 0.03;
   
   const generatedCoords = {
