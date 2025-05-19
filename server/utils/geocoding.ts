@@ -65,16 +65,59 @@ export async function getCoordinatesForZipCode(zipCode: string): Promise<Coordin
     return nearbyCoords;
   }
   
-  // For any other zip code, generate plausible coordinates based on the zip code
+  // For any other zip code, generate more geographically accurate coordinates
   console.log(`No hardcoded coordinates for ${zipCode}, generating approximate location`);
   
-  // Simple algorithm to generate different coordinates for different zip codes
-  // This isn't geographically accurate but provides visual variety for testing
-  const zipNum = parseInt(zipCode, 10);
-  const lat = 35 + (zipNum % 100) * 0.05;
-  const lng = -100 - (zipNum % 100) * 0.05;
+  // Use a more sophisticated algorithm that maps zip code ranges to general US regions
+  const firstDigit = parseInt(zipCode.charAt(0), 10);
+  let baseLat = 39.8; // Default to center of US
+  let baseLng = -98.5;
   
-  const generatedCoords = { lat, lng };
+  // Adjust base coordinates by zip code first digit which follows geographical regions
+  // 0,1: Northeast, 2,3: South Atlantic, 4,5: Midwest, 6,7: Central, 8,9: West
+  switch (firstDigit) {
+    case 0:
+    case 1:
+      // Northeast
+      baseLat = 41.0;
+      baseLng = -74.0;
+      break;
+    case 2:
+    case 3:
+      // South Atlantic
+      baseLat = 35.0;
+      baseLng = -80.0;
+      break;
+    case 4:
+    case 5:
+      // Midwest
+      baseLat = 40.0;
+      baseLng = -86.0;
+      break;
+    case 6:
+    case 7:
+      // Central
+      baseLat = 38.0;
+      baseLng = -92.0;
+      break;
+    case 8:
+    case 9:
+      // West
+      baseLat = 37.0;
+      baseLng = -115.0;
+      break;
+  }
+  
+  // Add variation based on the remaining digits to create diverse, but nearby coordinates
+  const lastFourDigits = parseInt(zipCode.substring(1), 10);
+  const latVariation = (lastFourDigits % 100) * 0.02;
+  const lngVariation = (lastFourDigits % 50) * 0.03;
+  
+  const generatedCoords = {
+    lat: baseLat + latVariation,
+    lng: baseLng - lngVariation
+  };
+  
   console.log(`Generated coordinates for ${zipCode}:`, generatedCoords);
   return generatedCoords;
 }
