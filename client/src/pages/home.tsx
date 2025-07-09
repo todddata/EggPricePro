@@ -11,7 +11,7 @@ import FeaturedStores from "@/components/featured-stores";
 import EggInfoSection from "@/components/egg-info-section";
 import { type SearchResultsResponse } from "@shared/schema";
 
-// This is a test comment
+// This is a test comment #2
 
 export default function Home() {
   // Form state
