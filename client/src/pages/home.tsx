@@ -82,33 +82,8 @@ export default function Home() {
           onSearch={handleSearch}
         />
 
-        {/* Egg Type Toggle Switch */}
-        <div className="mt-4 flex justify-end">
-          <div className="bg-white rounded-lg shadow-sm p-2 flex items-center gap-4">
-            <span className="text-sm text-gray-500">Egg Type:</span>
-            <div className="flex items-center bg-gray-100 rounded-full p-1">
-              <button
-                className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
-                  eggType === "brown" 
-                    ? "bg-primary text-white shadow-sm" 
-                    : "text-gray-600 hover:bg-gray-200"
-                }`}
-                onClick={() => handleSearch(zipCode, radius, "brown")}
-              >
-                Brown
-              </button>
-              <button
-                className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
-                  eggType === "white"
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-gray-600 hover:bg-gray-200"
-                }`}
-                onClick={() => handleSearch(zipCode, radius, "white")}
-              >
-                White
-              </button>
-            </div>
-          </div>
+        {/* Egg Type Toggle Switch that I removed*/}
+
         </div>
       </div>
       
