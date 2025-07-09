@@ -11,6 +11,8 @@ import FeaturedStores from "@/components/featured-stores";
 import EggInfoSection from "@/components/egg-info-section";
 import { type SearchResultsResponse } from "@shared/schema";
 
+// This is a test comment
+
 export default function Home() {
   // Form state
   const [zipCode, setZipCode] = useState("94110");
