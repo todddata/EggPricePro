@@ -82,9 +82,6 @@ export default function Home() {
           onSearch={handleSearch}
         />
 
-        {/* Egg Type Toggle Switch that I removed*/}
-
-        </div>
       </div>
       
       {isLoading && (
